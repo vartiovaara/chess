@@ -16,7 +16,7 @@ gcc --std=c11 -o chess main.c -lncursesw
 #include <ncurses.h>
 
 #define LENGTH(X) (sizeof X / sizeof X[0])
-#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board."
 
@@ -34,11 +34,10 @@ typedef struct {
 Piece makepiece(char piece_c, int x, int y) {
 	Piece piece;
 
-	piece.bitboard = 0; // TODO: make bitboard work
+	piece.bitboard = 0; // TODO: make bitboard work or change to xy or just remove this shit
 	
 	piece.is_white = isupper(piece_c);
 
-	// TODO: finish writing all of these
 	switch(tolower(piece_c)) {
 		case 'k':
 			piece.type = 0;
@@ -63,16 +62,51 @@ Piece makepiece(char piece_c, int x, int y) {
 	return piece;
 }
 
-Piece** parsefen(char* fen) {
-	Piece** board = malloc(sizeof(Piece)*64);
-	memset(board, NULL, sizeof(Piece)*64);
+typedef struct {
+	Piece** board; // [x][y]
+	bool whiteturn;
+	bool wqcastle, wkcastle;
+	bool bqcastle, bkcastle;
+	int half_c, full_c;
+	int enpas_x, enpas_y;
+} Board;
+
+Board parsefen(char* fen) {
+	Board board;
+	board.board = malloc(sizeof(Piece)*64);
+	memset(board.board, NULL, sizeof(Piece)*64);
+
+	char* cp = strdupa(fen);
+	char* p_placement = strtok(cp, ' ');
+	char* turn = strtok(NULL, ' ');
+	char* castling = strtok(NULL, ' ');
+	char* enpassant = strtok(NULL, ' ');
+	char* half_c = strtok(NULL, ' ');
+	char* full_c = strtok(NULL, ' ');
+
+	// turn
+	if (turn == "w" || turn == "b")
+		board.whiteturn = (turn == "w" ? true : false);
+	else
+		return null;
+
+	if (castling == "-"){
+		board.wqcastle = false;
+		board.wkcastle = false;
+		board.bqcastle = false;
+		board.bkcastle = false;
+	} else {
+		
+	}
+
 	return board;
 }
 
-int startprogram(Piece** board) {
+int startprogram(Board board) {
 	// main loop
 	while (true) {
 		// render the board
+		// rendering happens from top left (a8) square
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
 				move((row/2)-4+y, (col/2)-4+x);
@@ -106,7 +140,11 @@ int main(int argc, char** argv) {
 	}
 
 	// parse the fen
-	Piece** board = parsefen(start_fen);
+	Board board = parsefen(start_fen);
+	if (!board) {
+		printf("Error while parsing FEN.\n");
+		return 1;
+	}
 
 	// ncurses init stuff
 	setlocale(LC_ALL, "");
