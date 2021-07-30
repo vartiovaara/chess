@@ -54,7 +54,6 @@ int startprogram() {
 		// render the board
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
-				
 				move((row/2)-4+y, (col/2)-4+x);
 				printw("♚"); // | ((y+x+2 % 2)==0 ? COLOR_PAIR(1) : COLOR_PAIR(2)));
 				//mvaddch((row/2)-4+y, (col/2)-4+x, "♚");
@@ -103,8 +102,6 @@ int main(int argc, char** argv) {
 	init_pair(2, COLOR_WHITE, COLOR_WHITE);
 	init_pair(3, COLOR_BLACK, COLOR_BLACK);
 	init_pair(4, COLOR_BLACK, COLOR_WHITE);
-
-
 
 	// TODO: change to signal based thing
 	//		 as right now resizing isn't recognized
