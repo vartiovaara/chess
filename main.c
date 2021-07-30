@@ -9,6 +9,7 @@ gcc --std=c11 -o chess main.c -lncursesw
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include <locale.h>
 
 #define _XOPEN_SOURCE_EXTENDED
@@ -39,16 +40,36 @@ Piece makepiece(char piece_c, int x, int y) {
 
 	// TODO: finish writing all of these
 	switch(tolower(piece_c)) {
+		case 'k':
+			piece.type = 0;
+			break;
 		case 'q':
+			piece.type = 1;
 			break;
 		case 'b':
+			piece.type = 2;
+			break;
+		case 'n':
+			piece.type = 3;
+			break;
+		case 'r':
+			piece.type = 4;
+			break;
+		case 'p':
+			piece.type = 5;
 			break;
 	}
 
 	return piece;
 }
 
-int startprogram() {
+Piece** parsefen(char* fen) {
+	Piece** board = malloc(sizeof(Piece)*64);
+	memset(board, NULL, sizeof(Piece)*64);
+	return board;
+}
+
+int startprogram(Piece** board) {
 	// main loop
 	while (true) {
 		// render the board
@@ -84,6 +105,9 @@ int main(int argc, char** argv) {
 		start_fen = DEFAULT_FEN;
 	}
 
+	// parse the fen
+	Piece** board = parsefen(start_fen);
+
 	// ncurses init stuff
 	setlocale(LC_ALL, "");
 
@@ -108,7 +132,7 @@ int main(int argc, char** argv) {
 	getmaxyx(stdscr, row, col);
 
 	// start program
-	int exitcode = startprogram();
+	int exitcode = startprogram(board);
 
 	endwin();
 	return exitcode;
