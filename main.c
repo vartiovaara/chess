@@ -1,6 +1,6 @@
 /*
-To compile with gcc:
-gcc -Wall --std=c11 -o chess main.c -lncursesw
+To compile:
+cc -Wall --std=c11 -o chess main.c -lncursesw
 
 ♔♕♗♘♙♖
 ♚♛♝♞♟♜
@@ -16,7 +16,7 @@ gcc -Wall --std=c11 -o chess main.c -lncursesw
 #include <ncurses.h>
 
 #define LENGTH(X) (sizeof X / sizeof X[0])
-#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq a6 0 1"
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board."
 
@@ -67,8 +67,8 @@ typedef struct {
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
 	bool bqcastle, bkcastle; // blacks
-	int enpas_x, enpas_y; // set both to 0 for no en passant
-	int half_c, full_c;
+	unsigned int enpas_x, enpas_y; // set both to 0 for no en passant
+	unsigned int half_c, full_c;
 	bool parsingerr; // true if errors happened during parsing
 } Board;
 
@@ -116,7 +116,7 @@ Board parsefen(const char* fen) {
 
 	// en passant
 	printf("%s\n", enpassant);
-	printf("%c\n", enpassant[1]);
+	printf("%c %c\n", enpassant[0], enpassant[1]);
 	if (strcmp(enpassant, "-")) {
 		// check that the square is valid
 		if (enpassant[0] < 97 || enpassant[0] > 104)
@@ -125,13 +125,13 @@ Board parsefen(const char* fen) {
 			printf("Other ranks than 3 and 6 are not valid.\n");
 			return board;
 		}
-		board.enpas_x = (int)enpassant[0] - 97;
-		board.enpas_y = (enpassant[1] == '3' ? '6' : '3'); // values flipped becouse we count from top-left
+		board.enpas_x = enpassant[0] - 97;
+		board.enpas_y = (enpassant[1] == '3' ? 6 : 3) - 1; // values flipped becouse we count from top-left and -1 cuz counting from 0
 	} else {
 		board.enpas_x = 0;
 		board.enpas_y = 0;
 	}
-	printf("%d %d\n", board.enpas_x, board.enpas_y);
+	printf("%i %d\n", board.enpas_x, board.enpas_y);
 	
 	
 	board.parsingerr = false; // no errors happened (hopefully)
