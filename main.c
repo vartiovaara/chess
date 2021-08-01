@@ -22,8 +22,9 @@ gcc --std=c11 -o chess main.c -lncursesw
 
 int row, col;
 
-// struct for every piece on the board
 typedef struct {
+	// struct for every piece on the board
+	// TODO: Have the symbol for drawing the piece stored here
 	// 0 = king, 1 = queen, 2 = bishop,
 	// 3 = knight, 4 = rook, 5 = pawn
 	int type;
@@ -63,42 +64,64 @@ Piece makepiece(char piece_c, int x, int y) {
 }
 
 typedef struct {
-	Piece** board; // [x][y]
+	Piece board[8][8]; // [x][y]  top-left is [0][0}
 	bool whiteturn;
-	bool wqcastle, wkcastle;
-	bool bqcastle, bkcastle;
-	int half_c, full_c;
+	bool wqcastle, wkcastle; // whites castling rights
+	bool bqcastle, bkcastle; // blacks
 	int enpas_x, enpas_y;
+	int half_c, full_c;
+	bool parsingerr; // true if errors happened during parsing
 } Board;
 
-Board parsefen(char* fen) {
-	Board board;
-	board.board = malloc(sizeof(Piece)*64);
-	memset(board.board, NULL, sizeof(Piece)*64);
+Board parsefen(const char* fen) {
+	// Function to parse a FEN string and return a board.
+	// See: https://www.chessprogramming.org/Forsyth-Edwards_Notation
 
-	char* cp = strdupa(fen);
-	char* p_placement = strtok(cp, ' ');
-	char* turn = strtok(NULL, ' ');
-	char* castling = strtok(NULL, ' ');
-	char* enpassant = strtok(NULL, ' ');
-	char* half_c = strtok(NULL, ' ');
-	char* full_c = strtok(NULL, ' ');
+	Board board;
+	memset(board.board, NULL, sizeof(Piece)*64);
+	board.parsingerr = true; // if error happens we don't change this
+
+	// copy the fen string to a temporary array
+	// the +1 is so the \0 gets copied too
+	char* cp = malloc(sizeof(fen)*(strlen(fen)+1));
+	memcpy(cp, fen, sizeof(fen)*(strlen(fen)+1));
+	char* cp_addr = cp; // store the original pointer location
+
+	printf("%s\n", cp);
+
+	char* p_placement = strtok(cp, " ");
+	char* turn = strtok(NULL, " ");
+	char* castling = strtok(NULL, " ");
+	char* enpassant = strtok(NULL, " ");
+	char* half_c = strtok(NULL, " ");
+	char* full_c = strtok(NULL, " ");
+
+	free(cp_addr); // free the allocated string
 
 	// turn
-	if (turn == "w" || turn == "b")
-		board.whiteturn = (turn == "w" ? true : false);
+	printf("%s\n", turn);
+	if (!strcmp(turn, "w"))
+		board.whiteturn = true;
+	else if (!strcmp(turn, "b"))
+		board.whiteturn = false;
 	else
-		return null;
+		return board;
 
-	if (castling == "-"){
-		board.wqcastle = false;
-		board.wkcastle = false;
-		board.bqcastle = false;
-		board.bkcastle = false;
-	} else {
-		
-	}
+	// castling
+	printf("%s\n", castling);
+	board.wqcastle = (strchr(castling, 'Q') ? true : false);
+	board.wkcastle = (strchr(castling, 'K') ? true : false);
+	board.bqcastle = (strchr(castling, 'q') ? true : false);
+	board.bkcastle = (strchr(castling, 'k') ? true : false);
+	printf("%d %d %d %d\n", board.wqcastle, board.wkcastle, board.bqcastle, board.bkcastle);
 
+	// en passant
+	printf("%s\n", enpassant);
+	// en passant can only happen on ranks 3 and 6
+	if (enpassant[0] != 3 || enpassant[0] != 6)
+		return board
+
+	board.parsingerr = false; // no errors happened (hopefully)
 	return board;
 }
 
@@ -131,7 +154,7 @@ int main(int argc, char** argv) {
 				puts(USAGE);
 				return 0;
 			} else {
-				// TODO: actually parse the fen
+				// TODO: actually set start_fen to the fen user inputted
 			}
 
 		}
@@ -141,7 +164,7 @@ int main(int argc, char** argv) {
 
 	// parse the fen
 	Board board = parsefen(start_fen);
-	if (!board) {
+	if (board.parsingerr) {
 		printf("Error while parsing FEN.\n");
 		return 1;
 	}
