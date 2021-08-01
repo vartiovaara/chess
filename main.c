@@ -1,6 +1,6 @@
 /*
 To compile with gcc:
-gcc --std=c11 -o chess main.c -lncursesw
+gcc -Wall --std=c11 -o chess main.c -lncursesw
 
 ♔♕♗♘♙♖
 ♚♛♝♞♟♜
@@ -16,7 +16,7 @@ gcc --std=c11 -o chess main.c -lncursesw
 #include <ncurses.h>
 
 #define LENGTH(X) (sizeof X / sizeof X[0])
-#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq a6 0 1"
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board."
 
@@ -116,12 +116,15 @@ Board parsefen(const char* fen) {
 
 	// en passant
 	printf("%s\n", enpassant);
+	printf("%c\n", enpassant[1]);
 	if (strcmp(enpassant, "-")) {
 		// check that the square is valid
 		if (enpassant[0] < 97 || enpassant[0] > 104)
 			return board;
-		if (enpassant[1] != '3' || enpassant[1] != '6')
+		if (enpassant[1] != '3' || enpassant[1] != '6') {
+			printf("Other ranks than 3 and 6 are not valid.\n");
 			return board;
+		}
 		board.enpas_x = (int)enpassant[0] - 97;
 		board.enpas_y = (enpassant[1] == '3' ? '6' : '3'); // values flipped becouse we count from top-left
 	} else {
