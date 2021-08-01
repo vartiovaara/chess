@@ -59,16 +59,15 @@ Piece makepiece(char piece_c, int x, int y) {
 			piece.type = 5;
 			break;
 	}
-
 	return piece;
 }
 
 typedef struct {
-	Piece board[8][8]; // [x][y]  top-left is [0][0}
+	Piece board[8][8]; // [x][y]  top-left is [0][0]
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
 	bool bqcastle, bkcastle; // blacks
-	int enpas_x, enpas_y;
+	int enpas_x, enpas_y; // set both to 0 for no en passant
 	int half_c, full_c;
 	bool parsingerr; // true if errors happened during parsing
 } Board;
@@ -117,10 +116,21 @@ Board parsefen(const char* fen) {
 
 	// en passant
 	printf("%s\n", enpassant);
-	// en passant can only happen on ranks 3 and 6
-	if (enpassant[0] != 3 || enpassant[0] != 6)
-		return board
-
+	if (strcmp(enpassant, "-")) {
+		// check that the square is valid
+		if (enpassant[0] < 97 || enpassant[0] > 104)
+			return board;
+		if (enpassant[1] != '3' || enpassant[1] != '6')
+			return board;
+		board.enpas_x = (int)enpassant[0] - 97;
+		board.enpas_y = (enpassant[1] == '3' ? '6' : '3'); // values flipped becouse we count from top-left
+	} else {
+		board.enpas_x = 0;
+		board.enpas_y = 0;
+	}
+	printf("%d %d\n", board.enpas_x, board.enpas_y);
+	
+	
 	board.parsingerr = false; // no errors happened (hopefully)
 	return board;
 }
