@@ -16,7 +16,7 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 #include <ncurses.h>
 
 #define LENGTH(X) (sizeof X / sizeof X[0])
-#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq a6 0 1"
+#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board."
 
@@ -82,11 +82,14 @@ Board parsefen(const char* fen) {
 
 	// copy the fen string to a temporary array
 	// the +1 is so the \0 gets copied too
-	char* cp = malloc(sizeof(fen)*(strlen(fen)+1));
-	memcpy(cp, fen, sizeof(fen)*(strlen(fen)+1));
+	// TODO: this code probably tries to use the memory after it is freed
+	char* cp = malloc(strlen(fen)+1);
+	memcpy(cp, fen, strlen(fen)+1);
 	char* cp_addr = cp; // store the original pointer location
 
+#ifdef DEBUG
 	printf("%s\n", cp);
+#endif
 
 	// split the FEN to its different fields
 	char* p_placement = strtok(cp, " ");
@@ -99,7 +102,9 @@ Board parsefen(const char* fen) {
 	free(cp_addr); // free the allocated string
 
 	// turn
+#ifdef DEBUG
 	printf("%s\n", turn);
+#endif
 	if (!strcmp(turn, "w"))
 		board.whiteturn = true;
 	else if (!strcmp(turn, "b"))
@@ -108,16 +113,20 @@ Board parsefen(const char* fen) {
 		return board;
 
 	// castling
-	printf("%s\n", castling);
 	board.wqcastle = (strchr(castling, 'Q') ? true : false);
 	board.wkcastle = (strchr(castling, 'K') ? true : false);
 	board.bqcastle = (strchr(castling, 'q') ? true : false);
 	board.bkcastle = (strchr(castling, 'k') ? true : false);
+#ifdef DEBUG
+	printf("%s\n", castling);
 	printf("%d %d %d %d\n", board.wqcastle, board.wkcastle, board.bqcastle, board.bkcastle);
+#endif
 
 	// en passant
+#ifdef DEBUG
 	printf("%s\n", enpassant);
 	printf("%c %c\n", enpassant[0], enpassant[1]);
+#endif
 	if (strcmp(enpassant, "-")) {
 		// check that the square is valid
 		if (enpassant[0] < 97 || enpassant[0] > 104)
@@ -132,8 +141,9 @@ Board parsefen(const char* fen) {
 		board.enpas_x = 0;
 		board.enpas_y = 0;
 	}
+#ifdef DEEBUG
 	printf("%i %d\n", board.enpas_x, board.enpas_y);
-	
+#endif
 	
 	board.parsingerr = false; // no errors happened (hopefully)
 	return board;
