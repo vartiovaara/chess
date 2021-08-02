@@ -203,8 +203,10 @@ int startprogram(Board board) {
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
 				char ch = ((char)board.board[(7-y)*MOVE_N + x].type+48);
-				if (&(board.board[((7-y)*MOVE_N + x)]) == NULL)
-					ch = ' ';
+				Piece* addr = board.board;
+				addr + ((7-y)*MOVE_N + x);
+				//if (*(board.board + addr) == NULL)
+				//	ch = ' ';
 				mvaddch((row/2)-4+y, (col/2)-4+x, ch);
 				//printw("♚"); // | ((y+x+2 % 2)==0 ? COLOR_PAIR(1) : COLOR_PAIR(2)));
 				//mvaddch((row/2)-4+y, (col/2)-4+x, "♚");
