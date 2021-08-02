@@ -42,7 +42,7 @@ typedef struct {
 	uint64_t bitboard;
 } Piece;
 
-Piece makepiece(char piece_c, int x, int y) {
+Piece makepiece(char piece_c) {
 	Piece piece;
 
 	piece.bitboard = 0; // TODO: make bitboard work or change to xy or just remove this shit
@@ -73,7 +73,7 @@ Piece makepiece(char piece_c, int x, int y) {
 }
 
 typedef struct {
-	Piece board[64]; // [0] is a1 (a1 b1 ... g1 h1 a2 b2 ... )
+	Piece* board; // [0] is a1 (a1 b1 ... g1 h1 a2 b2 ... )
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
 	bool bqcastle, bkcastle; // blacks
@@ -88,6 +88,7 @@ Board parsefen(const char* fen) {
 	// For maximum length of FEN, see: https://chess.stackexchange.com/a/30006
 
 	Board board;
+	board.board = malloc(sizeof(Piece)*64);
 	memset(board.board, NULL, sizeof(Piece)*64);
 	board.parsingerr = true; // if error happens we don't change this
 
@@ -110,6 +111,30 @@ Board parsefen(const char* fen) {
 	char* enpassant = strtok(NULL, " ");
 	char* half_c = strtok(NULL, " ");
 	char* full_c = strtok(NULL, " ");
+
+	// piece placement
+	char* rows[8];
+	rows[0] = strtok(p_placement, "/");
+	for (int i = 1; i < 8; i++) {
+		rows[i] = strtok(NULL, "/");
+	}
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
+			// skip the amount of colons needed
+			if (isdigit(rows[i][j])) {
+				char num[2];
+				num[0] = rows[i][j];
+				num[1] = '\0';
+				errno = 0;
+				unsigned int n = (unsigned int)strtoul(num, NULL, 10);
+				if (errno == EINVAL || errno == ERANGE || n > 8)
+					return board;
+				j += n;
+			} else {
+				board.board[(7-i) * MOVE_N + j] = makepiece(rows[i][j]);
+			}
+		}
+	}
 
 	// turn
 	if (!strcmp(turn, "w"))
@@ -141,11 +166,13 @@ Board parsefen(const char* fen) {
 	}
 
 	// half-move clock
+	errno = 0;
 	board.half_c = (unsigned int)strtoul(half_c, NULL, 10);
 	if (errno == EINVAL || errno == ERANGE || board.half_c > 999)
 		return board;
 
 	// full-move counter
+	errno = 0;
 	board.full_c = (unsigned int)strtoul(full_c, NULL, 10);
 	if (errno == EINVAL || errno == ERANGE || board.full_c > 9999)
 		return board;
@@ -173,11 +200,13 @@ int startprogram(Board board) {
 	// main loop
 	while (true) {
 		// render the board
-		// rendering happens from top left (a8) square
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
-				move((row/2)-4+y, (col/2)-4+x);
-				printw("♚"); // | ((y+x+2 % 2)==0 ? COLOR_PAIR(1) : COLOR_PAIR(2)));
+				char ch = ((char)board.board[(7-y)*MOVE_N + x].type+48);
+				if (&(board.board[((7-y)*MOVE_N + x)]) == NULL)
+					ch = ' ';
+				mvaddch((row/2)-4+y, (col/2)-4+x, ch);
+				//printw("♚"); // | ((y+x+2 % 2)==0 ? COLOR_PAIR(1) : COLOR_PAIR(2)));
 				//mvaddch((row/2)-4+y, (col/2)-4+x, "♚");
 			}
 		}
@@ -229,8 +258,8 @@ int main(int argc, char** argv) {
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLACK);
 	init_pair(2, COLOR_WHITE, COLOR_WHITE);
-	init_pair(3, COLOR_BLACK, COLOR_BLACK);
-	init_pair(4, COLOR_BLACK, COLOR_WHITE);
+	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(4, COLOR_YELLOW, COLOR_WHITE);
 
 	// TODO: change to signal based thing
 	//		 as right now resizing isn't recognized
@@ -238,6 +267,8 @@ int main(int argc, char** argv) {
 
 	// start program
 	int exitcode = startprogram(board);
+
+	//free(board.board);
 
 	endwin();
 	return exitcode;
