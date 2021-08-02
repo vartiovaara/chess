@@ -18,10 +18,15 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 
 #define DEBUG
 
-#define LENGTH(X) (sizeof X / sizeof X[0])
 #define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 // See: https://chess.stackexchange.com/a/30006
 #define MAX_FEN_LEN 88 // includes trailing \0
+
+// moving directions for pieces
+#define MOVE_N 8
+#define MOVE_E 1
+#define MOVE_S -8
+#define MOVE_W -1 
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board."
 
@@ -68,12 +73,11 @@ Piece makepiece(char piece_c, int x, int y) {
 }
 
 typedef struct {
-	// TODO: Have board be a 1D array with 0 being a1
-	Piece board[8][8]; // [x][y]  top-left is [0][0]
+	Piece board[64]; // [0] is a1 (a1 b1 ... g1 h1 a2 b2 ... )
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
 	bool bqcastle, bkcastle; // blacks
-	unsigned int enpas_x, enpas_y; // set both to 0 for no en passant
+	unsigned int enpassant; // set to 0 for no en passant
 	unsigned int half_c, full_c;
 	bool parsingerr; // true if errors happened during parsing
 } Board;
@@ -99,10 +103,6 @@ Board parsefen(const char* fen) {
 	char cp[MAX_FEN_LEN]; // this is the copy
 	memcpy(cp, fen, fen_len);
 
-#ifdef DEBUG
-	printf("%s\n", cp);
-#endif
-
 	// split the FEN to its different fields
 	char* p_placement = strtok(cp, " ");
 	char* turn = strtok(NULL, " ");
@@ -112,9 +112,6 @@ Board parsefen(const char* fen) {
 	char* full_c = strtok(NULL, " ");
 
 	// turn
-#ifdef DEBUG
-	printf("%s\n", turn);
-#endif
 	if (!strcmp(turn, "w"))
 		board.whiteturn = true;
 	else if (!strcmp(turn, "b"))
@@ -127,48 +124,45 @@ Board parsefen(const char* fen) {
 	board.wkcastle = (strchr(castling, 'K') ? true : false);
 	board.bqcastle = (strchr(castling, 'q') ? true : false);
 	board.bkcastle = (strchr(castling, 'k') ? true : false);
-#ifdef DEBUG
-	printf("%s\n", castling);
-	printf("%d %d %d %d\n", board.wqcastle, board.wkcastle, board.bqcastle, board.bkcastle);
-#endif
 
 	// en passant
-#ifdef DEBUG
-	printf("%s\n", enpassant);
-	printf("%c %c\n", enpassant[0], enpassant[1]);
-#endif
 	if (strcmp(enpassant, "-")) {
 		// check that the square is valid
 		if (enpassant[0] < 97 || enpassant[0] > 104)
 			return board;
 		if (enpassant[1] != '3' && enpassant[1] != '6') {
-			printf("Other ranks than 3 and 6 are not valid.\n");
+			printf("Other ranks than 3 and 6 for en passant target are not valid.\n");
 			return board;
 		}
-		board.enpas_x = enpassant[0] - 97;
-		board.enpas_y = (enpassant[1] == '3' ? 6 : 3) - 1; // values flipped becouse we count from top-left and -1 cuz counting from 0
+		board.enpassant = (enpassant[0] - 97) * MOVE_E; // x
+		board.enpassant += ((enpassant[1] == '3' ? 3 : 6)-1) * MOVE_N; // y (-1 is becouse counting starts from a1 not a0(don't move when 1))
 	} else {
-		board.enpas_x = 0;
-		board.enpas_y = 0;
+		board.enpassant = 0;
 	}
-#ifdef DEBUG
-	printf("%d %d\n", board.enpas_x, board.enpas_y);
-#endif
 
 	// half-move clock
 	board.half_c = (unsigned int)strtoul(half_c, NULL, 10);
 	if (errno == EINVAL || errno == ERANGE || board.half_c > 999)
 		return board;
-#ifdef DEBUG
-	printf("\"%s\" -> %u\n", half_c, board.half_c);
-#endif
 
 	// full-move counter
 	board.full_c = (unsigned int)strtoul(full_c, NULL, 10);
 	if (errno == EINVAL || errno == ERANGE || board.full_c > 9999)
 		return board;
+
 #ifdef DEBUG
+	// debug information
+	puts("Fen parsing debug information start: \n");
+	printf("%s\n", fen);
+	printf("%s\n", p_placement);
+	printf("%s\n", turn);
+	printf("%s\n", castling);
+	printf("Q: %u K: %u q: %u k: %u\n", board.wqcastle, board.wkcastle, board.bqcastle, board.bkcastle);
+	printf("%s\n", enpassant);
+	printf("%c %c -> %u\n", enpassant[0], enpassant[1], board.enpassant);
+	printf("\"%s\" -> %u\n", half_c, board.half_c);
 	printf("\"%s\" -> %u\n", full_c, board.full_c);
+	puts("Fen parsing debug information end. \n");
 #endif
 	
 	board.parsingerr = false; // no errors happened (hopefully)
