@@ -15,6 +15,8 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 #define _XOPEN_SOURCE_EXTENDED
 #include <ncurses.h>
 
+#define DEBUG
+
 #define LENGTH(X) (sizeof X / sizeof X[0])
 #define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
@@ -75,6 +77,7 @@ typedef struct {
 Board parsefen(const char* fen) {
 	// Function to parse a FEN string and return a board.
 	// See: https://www.chessprogramming.org/Forsyth-Edwards_Notation
+	// For maximum length of FEN, see: https://chess.stackexchange.com/a/30006
 
 	Board board;
 	memset(board.board, NULL, sizeof(Piece)*64);
@@ -82,10 +85,8 @@ Board parsefen(const char* fen) {
 
 	// copy the fen string to a temporary array
 	// the +1 is so the \0 gets copied too
-	// TODO: this code probably tries to use the memory after it is freed
-	char* cp = malloc(strlen(fen)+1);
+	char cp[88];
 	memcpy(cp, fen, strlen(fen)+1);
-	char* cp_addr = cp; // store the original pointer location
 
 #ifdef DEBUG
 	printf("%s\n", cp);
@@ -98,8 +99,6 @@ Board parsefen(const char* fen) {
 	char* enpassant = strtok(NULL, " ");
 	char* half_c = strtok(NULL, " ");
 	char* full_c = strtok(NULL, " ");
-
-	free(cp_addr); // free the allocated string
 
 	// turn
 #ifdef DEBUG
