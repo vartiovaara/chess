@@ -11,6 +11,7 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 #include <ctype.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <errno.h>
 
 #define _XOPEN_SOURCE_EXTENDED
 #include <ncurses.h>
@@ -19,6 +20,8 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 
 #define LENGTH(X) (sizeof X / sizeof X[0])
 #define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+// See: https://chess.stackexchange.com/a/30006
+#define MAX_FEN_LEN 88 // includes trailing \0
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board."
 
@@ -65,6 +68,7 @@ Piece makepiece(char piece_c, int x, int y) {
 }
 
 typedef struct {
+	// TODO: Have board be a 1D array with 0 being a1
 	Piece board[8][8]; // [x][y]  top-left is [0][0]
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
@@ -83,10 +87,17 @@ Board parsefen(const char* fen) {
 	memset(board.board, NULL, sizeof(Piece)*64);
 	board.parsingerr = true; // if error happens we don't change this
 
-	// copy the fen string to a temporary array
 	// the +1 is so the \0 gets copied too
-	char cp[88];
-	memcpy(cp, fen, strlen(fen)+1);
+	unsigned int fen_len = strlen(fen) + 1;
+
+	// copy the fen string to a temporary array
+	if (fen_len > MAX_FEN_LEN) {
+		puts("The FEN is too long, this probably means it is not valid.\n");
+		puts("If the FEN is valid, please make a bug report and the issue will be investigated.\n");
+		return board;
+	}
+	char cp[MAX_FEN_LEN]; // this is the copy
+	memcpy(cp, fen, fen_len);
 
 #ifdef DEBUG
 	printf("%s\n", cp);
@@ -140,8 +151,24 @@ Board parsefen(const char* fen) {
 		board.enpas_x = 0;
 		board.enpas_y = 0;
 	}
-#ifdef DEEBUG
-	printf("%i %d\n", board.enpas_x, board.enpas_y);
+#ifdef DEBUG
+	printf("%d %d\n", board.enpas_x, board.enpas_y);
+#endif
+
+	// half-move clock
+	board.half_c = (unsigned int)strtoul(half_c, NULL, 10);
+	if (errno == EINVAL || errno == ERANGE || board.half_c > 999)
+		return board;
+#ifdef DEBUG
+	printf("\"%s\" -> %u\n", half_c, board.half_c);
+#endif
+
+	// full-move counter
+	board.full_c = (unsigned int)strtoul(full_c, NULL, 10);
+	if (errno == EINVAL || errno == ERANGE || board.full_c > 9999)
+		return board;
+#ifdef DEBUG
+	printf("\"%s\" -> %u\n", full_c, board.full_c);
 #endif
 	
 	board.parsingerr = false; // no errors happened (hopefully)
