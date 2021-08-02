@@ -88,6 +88,7 @@ Board parsefen(const char* fen) {
 
 	printf("%s\n", cp);
 
+	// split the FEN to its different fields
 	char* p_placement = strtok(cp, " ");
 	char* turn = strtok(NULL, " ");
 	char* castling = strtok(NULL, " ");
