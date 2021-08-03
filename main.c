@@ -31,6 +31,8 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board.\n"
 
 int row, col;
+const wchar_t white_chars[6] = L"♚♛♝♞♜♟";
+const wchar_t black_chars[6] = L"♔♕♗♘♖♙";
 
 typedef struct {
 	// struct for every piece on the board
@@ -38,15 +40,13 @@ typedef struct {
 	// 0 = king, 1 = queen, 2 = bishop,
 	// 3 = knight, 4 = rook, 5 = pawn
 	int type;
+	wchar_t ch;
 	bool is_white;
-	uint64_t bitboard;
 } Piece;
 
 Piece makepiece(char piece_c) {
 	Piece piece;
 
-	piece.bitboard = 0; // TODO: make bitboard work or change to xy or just remove this shit
-	
 	piece.is_white = isupper(piece_c);
 
 	switch(tolower(piece_c)) {
@@ -69,6 +69,10 @@ Piece makepiece(char piece_c) {
 			piece.type = 5;
 			break;
 	}
+	if (piece.is_white)
+		piece.ch = white_chars[piece.type];
+	else
+		piece.ch = black_chars[piece.type];
 	return piece;
 }
 
@@ -230,15 +234,18 @@ int startprogram(Board board) {
 			for (int x = 0; x < 8; x++) {
 				// in this loop, the actual position on the
 				// chess board is (x), (7-y) counting from a1
-				char ch = ' ';
+				wchar_t ch[2] = L"-\0";
 				if (board.board[(7-y)*MOVE_N + x] != NULL) {
-					ch = board.board[(7-y)*MOVE_N + x]->type+48;
+					//ch = board.board[(7-y)*MOVE_N + x]->type+48;
+					ch[0] = board.board[(7-y)*MOVE_N + x]->ch;
 					if (board.board[(7-y)*MOVE_N + x] -> is_white)
 						attron(COLOR_PAIR(1));
 					else
 						attron(COLOR_PAIR(3));
 				}
-				mvaddch((row/2)-4+y, (col/2)-4+x, ch);
+				//mvaddch((row/2)-4+y, (col/2)-4+x, ch);
+				move((row/2)-4+y, (col/2)-4+x);
+				addwstr(ch);
 
 				if (board.board[(7-y)*MOVE_N + x] != NULL) {
 					if (board.board[(7-y)*MOVE_N + x] -> is_white)
