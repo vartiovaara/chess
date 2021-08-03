@@ -45,6 +45,8 @@ typedef struct {
 } Piece;
 
 Piece makepiece(char piece_c) {
+	// Makes a piece from its corresponding FEN symbol
+
 	Piece piece;
 
 	piece.is_white = isupper(piece_c);
