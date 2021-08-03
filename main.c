@@ -14,7 +14,7 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 #include <errno.h>
 
 #define _XOPEN_SOURCE_EXTENDED
-#include <ncurses.h>
+#include <ncursesw/ncurses.h>
 
 #define DEBUG
 
@@ -71,10 +71,13 @@ Piece makepiece(char piece_c) {
 			piece.type = 5;
 			break;
 	}
-	if (piece.is_white)
+	//piece.ch = black_chars[piece.type];
+	
+	if (!piece.is_white)
 		piece.ch = white_chars[piece.type];
 	else
 		piece.ch = black_chars[piece.type];
+	
 	return piece;
 }
 
@@ -96,7 +99,7 @@ Board parsefen(const char* fen) {
 
 	Board board;
 	board.pieces = malloc(sizeof(Piece)*32);
-	memset(&board.board, NULL, sizeof(board.board[0])*64);
+	memset(&board.board, 0, sizeof(board.board[0])*64);
 	board.parsingerr = true; // if error happens we don't change this
 	// the +1 is so the \0 gets copied too
 	unsigned int fen_len = strlen(fen) + 1;
@@ -224,28 +227,23 @@ int startprogram(Board board) {
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
 				// in this loop, the actual position on the
-				// chess board is (x), (7-y) counting from a1
-				wchar_t ch[2] = L"-\0";
+				// chess board is ((x), (7-y)) counting from a1
+				wchar_t ch[2] = L" \0";
 				if (board.board[(7-y)*MOVE_N + x] != NULL) {
-					//ch = board.board[(7-y)*MOVE_N + x]->type+48;
 					ch[0] = board.board[(7-y)*MOVE_N + x]->ch;
-					if (board.board[(7-y)*MOVE_N + x] -> is_white)
-						attron(COLOR_PAIR(1));
-					else
-						attron(COLOR_PAIR(3));
 				}
-				//mvaddch((row/2)-4+y, (col/2)-4+x, ch);
+				int colour = 1;
+				if ((x+(7-y)) % 2 == 0)
+					colour += 1;
+				if (board.board[(7-y)*MOVE_N + x] != NULL)
+					if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
+						colour += 2;
+
+				attron(COLOR_PAIR(colour));
 				move((row/2)-4+y, (col/2)-4+x);
 				addwstr(ch);
 
-				if (board.board[(7-y)*MOVE_N + x] != NULL) {
-					if (board.board[(7-y)*MOVE_N + x] -> is_white)
-						attroff(COLOR_PAIR(1));
-					else
-						attroff(COLOR_PAIR(3));
-				}
-				//printw("♚"); // | ((y+x+2 % 2)==0 ? COLOR_PAIR(1) : COLOR_PAIR(2)));
-				//mvaddch((row/2)-4+y, (col/2)-4+x, "♚");
+				attroff(COLOR_PAIR(colour));
 			}
 		}
 		refresh();
@@ -294,10 +292,12 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	start_color();
-	init_pair(1, COLOR_WHITE, COLOR_BLACK);
-	init_pair(2, COLOR_WHITE, COLOR_WHITE);
-	init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-	init_pair(4, COLOR_YELLOW, COLOR_WHITE);
+	init_color(COLOR_RED, 400, 200, 200); // used for "dark" tile colour
+	init_color(COLOR_YELLOW, 300, 300, 100); // used for "light" tile colour
+	init_pair(1, COLOR_WHITE, COLOR_YELLOW);
+	init_pair(2, COLOR_WHITE, COLOR_RED);
+	init_pair(3, COLOR_BLACK, COLOR_YELLOW);
+	init_pair(4, COLOR_BLACK, COLOR_RED);
 
 	// TODO: change to signal based thing
 	//		 as right now resizing isn't recognized

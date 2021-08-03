@@ -9,6 +9,9 @@
 
 ### Above combination will ignore all files without extension ###
 
+# Unignore makefile
+!Makefile
+
 # Prerequisites
 *.d
 
