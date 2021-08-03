@@ -28,7 +28,7 @@ cc -Wall --std=c11 -o chess main.c -lncursesw
 #define MOVE_S -8
 #define MOVE_W -1 
 
-#define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board."
+#define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board.\n"
 
 int row, col;
 
@@ -73,7 +73,8 @@ Piece makepiece(char piece_c) {
 }
 
 typedef struct {
-	Piece* board; // [0] is a1 (a1 b1 ... g1 h1 a2 b2 ... )
+	Piece* pieces; // can have max 32 pieces. For some reason, the pointers become invalid when out of context when having this array on stack.
+	Piece* board[64]; // pointers to pieces NULL if no piece [0] is a1 (a1 b1 ... g1 h1 a2 b2 ... )
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
 	bool bqcastle, bkcastle; // blacks
@@ -88,9 +89,10 @@ Board parsefen(const char* fen) {
 	// For maximum length of FEN, see: https://chess.stackexchange.com/a/30006
 
 	Board board;
-	board.board = malloc(sizeof(Piece)*64);
-	memset(board.board, NULL, sizeof(Piece)*64);
+	board.pieces = malloc(sizeof(Piece)*32);
+	memset(&board.board, NULL, sizeof(board.board[0])*64);
 	board.parsingerr = true; // if error happens we don't change this
+	printf("%u %u\n", (unsigned int)sizeof(board.board[0]), (unsigned int)sizeof(&board.board));
 
 	// the +1 is so the \0 gets copied too
 	unsigned int fen_len = strlen(fen) + 1;
@@ -113,11 +115,14 @@ Board parsefen(const char* fen) {
 	char* full_c = strtok(NULL, " ");
 
 	// piece placement
+	// split the rows
 	char* rows[8];
 	rows[0] = strtok(p_placement, "/");
 	for (int i = 1; i < 8; i++) {
 		rows[i] = strtok(NULL, "/");
 	}
+	// go through the rows and make the pieces if necessary
+	int piece_count = 0;
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
 			// skip the amount of colons needed
@@ -131,8 +136,11 @@ Board parsefen(const char* fen) {
 					return board;
 				j += n;
 			} else {
-				board.board[(7-i) * MOVE_N + j] = makepiece(rows[i][j]);
+				board.pieces[piece_count] = makepiece(rows[i][j]);
+				board.board[(7-i) * MOVE_N + j] = &board.pieces[piece_count];
+				piece_count++;
 			}
+
 		}
 	}
 
@@ -180,6 +188,15 @@ Board parsefen(const char* fen) {
 #ifdef DEBUG
 	// debug information
 	puts("Fen parsing debug information start: \n");
+	for (int i = 63; i >= 0; i--) {
+		if (board.board[i] != NULL)
+			putc(board.board[i]->type+48+(board.board[i]->is_white ? (97-48) : 0), stdout);
+		else
+			putc('-', stdout);
+		if (i % 8 == 0)
+			putc('\n', stdout);
+	}
+	putc('\n', stdout);
 	printf("%s\n", fen);
 	printf("%s\n", p_placement);
 	printf("%s\n", turn);
@@ -200,14 +217,37 @@ int startprogram(Board board) {
 	// main loop
 	while (true) {
 		// render the board
+		/*
+		move((row/2)-4, (col/2)-4);
+		for (int i = 0; i < 64; i++) {
+			if (i % 8 == 0 || i != 0)
+				move((row/2)-4+i/8, (col/2)-4);
+			char ch = ' ';
+			if (board.board[i] != NULL)
+				ch = board.board[i]->type+48;
+			addch(ch);
+		}*/
+		
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
-				char ch = ((char)board.board[(7-y)*MOVE_N + x].type+48);
-				Piece* addr = board.board;
-				addr + ((7-y)*MOVE_N + x);
-				//if (*(board.board + addr) == NULL)
-				//	ch = ' ';
+				// in this loop, the actual position on the
+				// chess board is (x), (7-y) counting from a1
+				char ch = ' ';
+				if (board.board[(7-y)*MOVE_N + x] != NULL) {
+					ch = board.board[(7-y)*MOVE_N + x]->type+48;
+					if (board.board[(7-y)*MOVE_N + x] -> is_white)
+						attron(COLOR_PAIR(1));
+					else
+						attron(COLOR_PAIR(3));
+				}
 				mvaddch((row/2)-4+y, (col/2)-4+x, ch);
+
+				if (board.board[(7-y)*MOVE_N + x] != NULL) {
+					if (board.board[(7-y)*MOVE_N + x] -> is_white)
+						attroff(COLOR_PAIR(1));
+					else
+						attroff(COLOR_PAIR(3));
+				}
 				//printw("♚"); // | ((y+x+2 % 2)==0 ? COLOR_PAIR(1) : COLOR_PAIR(2)));
 				//mvaddch((row/2)-4+y, (col/2)-4+x, "♚");
 			}
@@ -270,7 +310,7 @@ int main(int argc, char** argv) {
 	// start program
 	int exitcode = startprogram(board);
 
-	//free(board.board);
+	free(board.pieces);
 
 	endwin();
 	return exitcode;
