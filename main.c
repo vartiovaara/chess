@@ -1,6 +1,6 @@
 /*
 To compile:
-cc -Wall --std=c11 -o chess main.c -lncursesw
+	make
 
 ♔♕♗♘♙♖
 ♚♛♝♞♟♜
