@@ -92,8 +92,6 @@ Board parsefen(const char* fen) {
 	board.pieces = malloc(sizeof(Piece)*32);
 	memset(&board.board, NULL, sizeof(board.board[0])*64);
 	board.parsingerr = true; // if error happens we don't change this
-	printf("%u %u\n", (unsigned int)sizeof(board.board[0]), (unsigned int)sizeof(&board.board));
-
 	// the +1 is so the \0 gets copied too
 	unsigned int fen_len = strlen(fen) + 1;
 
