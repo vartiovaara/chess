@@ -221,17 +221,6 @@ int startprogram(Board board) {
 	// main loop
 	while (true) {
 		// render the board
-		/*
-		move((row/2)-4, (col/2)-4);
-		for (int i = 0; i < 64; i++) {
-			if (i % 8 == 0 || i != 0)
-				move((row/2)-4+i/8, (col/2)-4);
-			char ch = ' ';
-			if (board.board[i] != NULL)
-				ch = board.board[i]->type+48;
-			addch(ch);
-		}*/
-		
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
 				// in this loop, the actual position on the
