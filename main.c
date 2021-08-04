@@ -18,8 +18,9 @@ To compile:
 
 #define DEBUG
 
-#define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+#define DEFAULT_FEN "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
 //"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
+//"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 // See: https://chess.stackexchange.com/a/30006
 #define MAX_FEN_LEN 88 // includes trailing \0
 
@@ -133,9 +134,8 @@ Board parsefen(const char* fen) {
 	// go through the rows and make the pieces if necessary
 	int piece_count = 0;
 	for (int i = 0; i < 8; i++) {
-		int rc = 0;
+		int rc = 0; // stores the index on the current row
 		for (int j = 0; j < 8; j++) {
-			printf("%d %d: %c\n", j, i, rows[i][j]);
 			if (rows[i][rc] == '\0')
 				break;
 			// skip the amount of colons needed
@@ -153,7 +153,7 @@ Board parsefen(const char* fen) {
 				board.board[(7-i) * MOVE_N + j] = &board.pieces[piece_count];
 				piece_count++;
 			}
-			rc++;
+			rc++; // parse the next character
 		}
 	}
 
@@ -227,6 +227,9 @@ Board parsefen(const char* fen) {
 }
 
 int startprogram(Board board) {
+	// the coordinates need to fit to the side of the board
+	WINDOW *p_area = newwin(9, 9, (row/2)-4, (col/2)-4-1);
+
 	// main loop
 	while (true) {
 		// clear the screen to prevent ghosting after terminal resize
@@ -252,18 +255,28 @@ int startprogram(Board board) {
 					if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
 						colour += 2;
 
-				attron(COLOR_PAIR(colour));
-				move((row/2)-4+y, (col/2)-4+x);
-				addwstr(ch);
+				wattron(p_area, COLOR_PAIR(colour));
+				//move((row/2)-4+y, (col/2)-4+x);
+				//move(y, x+1);
+				mvwaddwstr(p_area, y, x+1, ch);
 
-				attroff(COLOR_PAIR(colour));
+				wattroff(p_area, COLOR_PAIR(colour));
 			}
 		}
+		// print the row label
+		for (int i = 0; i < 8; i++) {
+			char ch[2] = {i+49, '\0'};
+			mvwprintw(p_area, 7-(i), 0, ch);
+		}
+		mvwprintw(p_area, 8, 1, "abcdefgh"); // priint the colon label
 		refresh();
+		wrefresh(p_area);
 
 		// input 
-		if (getch() == KEY_F(1))
+		if (getch() == KEY_F(1)) {
+			delwin(p_area);
 			return 0;
+		}
 	}
 }
 
