@@ -19,6 +19,7 @@ To compile:
 #define DEBUG
 
 #define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+//"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
 // See: https://chess.stackexchange.com/a/30006
 #define MAX_FEN_LEN 88 // includes trailing \0
 
@@ -31,8 +32,9 @@ To compile:
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board.\n"
 
 int row, col;
-const wchar_t white_chars[6] = L"♚♛♝♞♜♟";
-const wchar_t black_chars[6] = L"♔♕♗♘♖♙";
+//const wchar_t white_chars[6] = L"♚♛♝♞♜♟";
+//const wchar_t black_chars[6] = L"♔♕♗♘♖♙";
+const wchar_t piece_chars[6] = L"♚♛♝♞♜♙";
 
 typedef struct {
 	// struct for every piece on the board
@@ -71,13 +73,13 @@ Piece makepiece(char piece_c) {
 			piece.type = 5;
 			break;
 	}
-	//piece.ch = black_chars[piece.type];
-	
+	piece.ch = piece_chars[piece.type];
+	/*
 	if (!piece.is_white)
 		piece.ch = white_chars[piece.type];
 	else
 		piece.ch = black_chars[piece.type];
-	
+	*/
 	return piece;
 }
 
@@ -131,23 +133,27 @@ Board parsefen(const char* fen) {
 	// go through the rows and make the pieces if necessary
 	int piece_count = 0;
 	for (int i = 0; i < 8; i++) {
+		int rc = 0;
 		for (int j = 0; j < 8; j++) {
+			printf("%d %d: %c\n", j, i, rows[i][j]);
+			if (rows[i][rc] == '\0')
+				break;
 			// skip the amount of colons needed
-			if (isdigit(rows[i][j])) {
+			if (isdigit(rows[i][rc])) {
 				char num[2];
-				num[0] = rows[i][j];
+				num[0] = rows[i][rc];
 				num[1] = '\0';
 				errno = 0;
 				unsigned int n = (unsigned int)strtoul(num, NULL, 10);
 				if (errno == EINVAL || errno == ERANGE || n > 8)
 					return board;
-				j += n;
+				j += n-1;
 			} else {
-				board.pieces[piece_count] = makepiece(rows[i][j]);
+				board.pieces[piece_count] = makepiece(rows[i][rc]);
 				board.board[(7-i) * MOVE_N + j] = &board.pieces[piece_count];
 				piece_count++;
 			}
-
+			rc++;
 		}
 	}
 
@@ -223,6 +229,13 @@ Board parsefen(const char* fen) {
 int startprogram(Board board) {
 	// main loop
 	while (true) {
+		// clear the screen to prevent ghosting after terminal resize
+		for (int y = 0; y < row; y++) {
+			for (int x = 0; x < col; x++) {
+				mvaddch(y, x, ' ');
+			}
+		}
+
 		// render the board
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
@@ -292,8 +305,8 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	start_color();
-	init_color(COLOR_RED, 400, 200, 200); // used for "dark" tile colour
-	init_color(COLOR_YELLOW, 300, 300, 100); // used for "light" tile colour
+	init_color(COLOR_RED, 500, 300, 300); // used for "dark" tile colour
+	init_color(COLOR_YELLOW, 400, 400, 200); // used for "light" tile colour
 	init_pair(1, COLOR_WHITE, COLOR_YELLOW);
 	init_pair(2, COLOR_WHITE, COLOR_RED);
 	init_pair(3, COLOR_BLACK, COLOR_YELLOW);
