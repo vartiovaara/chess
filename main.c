@@ -33,13 +33,11 @@ To compile:
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board.\n"
 
 int row, col;
-//const wchar_t white_chars[6] = L"♚♛♝♞♜♟";
-//const wchar_t black_chars[6] = L"♔♕♗♘♖♙";
+
 const wchar_t piece_chars[6] = L"♚♛♝♞♜♙";
 
 typedef struct {
 	// struct for every piece on the board
-	// TODO: Have the symbol for drawing the piece stored here
 	// 0 = king, 1 = queen, 2 = bishop,
 	// 3 = knight, 4 = rook, 5 = pawn
 	int type;
@@ -49,6 +47,7 @@ typedef struct {
 
 Piece makepiece(char piece_c) {
 	// Makes a piece from its corresponding FEN symbol
+	// TODO: throw an error if char is wrong
 
 	Piece piece;
 
@@ -75,12 +74,6 @@ Piece makepiece(char piece_c) {
 			break;
 	}
 	piece.ch = piece_chars[piece.type];
-	/*
-	if (!piece.is_white)
-		piece.ch = white_chars[piece.type];
-	else
-		piece.ch = black_chars[piece.type];
-	*/
 	return piece;
 }
 
@@ -231,9 +224,6 @@ Board parsefen(const char* fen) {
 }
 
 int startprogram(Board board) {
-	// the coordinates need to fit to the side of the board
-	//WINDOW *p_area = newwin(9, 9, (row/2)-4, (col/2)-4-1);
-
 	// main loop
 	while (true) {
 		// board position on the screen. i don't use windows
