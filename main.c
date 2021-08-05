@@ -12,6 +12,7 @@ To compile:
 #include <stdlib.h>
 #include <locale.h>
 #include <errno.h>
+#include <math.h>
 
 #define _XOPEN_SOURCE_EXTENDED
 #include <ncursesw/ncurses.h>
@@ -223,6 +224,30 @@ Board parsefen(const char* fen) {
 	return board;
 }
 
+char* ntostrcoord(int pos) {
+	// Returns e.g. a1\0
+	static char str[3];
+	str[0] = (pos % 8) + 97;
+	str[1] = floor(pos / 8) + 49;
+	str[2] = '\0';
+	return str;
+}
+
+/*
+// actually i'll make this function when the displaying and input is done
+void getmoves(Piece piece, int pos, int* moves, int* moves_amount) {
+	// Gives all the moves possible by a piece.
+
+	// 0 = king, 1 = queen, 2 = bishop,
+	// 3 = knight, 4 = rook, 5 = pawn
+
+	// King
+	if (piece.type == 0) {
+
+	}
+}
+*/
+
 int startprogram(Board board) {
 	// main loop
 	while (true) {
@@ -258,18 +283,28 @@ int startprogram(Board board) {
 				attroff(COLOR_PAIR(colour));
 			}
 		}
-		// print the row label
+		// print the labels next to the board
 		for (int i = 0; i < 8; i++) {
 			char ch[2] = {i+49, '\0'};
 			mvprintw(boardy+(7-i), boardx-1, ch);
 		}
-		mvprintw(boardy+8, boardx, "abcdefgh"); // print the colon label
+		mvprintw(boardy+8, boardx, "abcdefgh");
 
+		// turn indicator
+		mvaddch(boardy+9, boardx-2, (board.whiteturn ? 'W': 'B'));
+
+		// en passant
+		if (board.enpassant == 0)
+			mvaddch(boardy+9, boardx+8, '-');
+		else
+			mvprintw(boardy+9, boardx+8, ntostrcoord(board.enpassant));
+
+		unsigned int ch = getch();
+		// TODO: user input stuff
 
 		refresh();
 
-		// input
-		if (getch() == KEY_F(1)) {
+		if (ch == KEY_F(1)) {
 			return 0;
 		}
 	}
@@ -327,6 +362,7 @@ int main(int argc, char** argv) {
 	// start program
 	int exitcode = startprogram(board);
 
+	// free the pointer table
 	free(board.pieces);
 
 	endwin();
