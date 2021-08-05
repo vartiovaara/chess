@@ -28,7 +28,7 @@ To compile:
 #define MOVE_N 8
 #define MOVE_E 1
 #define MOVE_S -8
-#define MOVE_W -1 
+#define MOVE_W -1
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board.\n"
 
@@ -218,7 +218,7 @@ Board parsefen(const char* fen) {
 	printf("\"%s\" -> %u\n", full_c, board.full_c);
 	puts("Fen parsing debug information end. \n");
 #endif
-	
+
 	board.parsingerr = false; // no errors happened (hopefully)
 	return board;
 }
@@ -268,7 +268,7 @@ int startprogram(Board board) {
 
 		refresh();
 
-		// input 
+		// input
 		if (getch() == KEY_F(1)) {
 			return 0;
 		}
@@ -332,3 +332,4 @@ int main(int argc, char** argv) {
 	endwin();
 	return exitcode;
 }
+
