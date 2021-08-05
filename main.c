@@ -132,6 +132,10 @@ Board parsefen(const char* fen) {
 		rows[i] = strtok(NULL, "/");
 	}
 	// go through the rows and make the pieces if necessary
+	// TODO: can be more efficient as now it loops trough all
+	// 64 squares and all that is needed is looping trough
+	// all the characters in the FEN. Thusly not even needing
+	// splitting.
 	int piece_count = 0;
 	for (int i = 0; i < 8; i++) {
 		int rc = 0; // stores the index on the current row
@@ -228,10 +232,15 @@ Board parsefen(const char* fen) {
 
 int startprogram(Board board) {
 	// the coordinates need to fit to the side of the board
-	WINDOW *p_area = newwin(9, 9, (row/2)-4, (col/2)-4-1);
+	//WINDOW *p_area = newwin(9, 9, (row/2)-4, (col/2)-4-1);
 
 	// main loop
 	while (true) {
+		// board position on the screen. i don't use windows
+		// becouse moving them would be cumbersome. this is more elegant
+		unsigned int boardx = ((col/2)-4);
+		unsigned int boardy = ((row/2)-4);
+
 		// clear the screen to prevent ghosting after terminal resize
 		for (int y = 0; y < row; y++) {
 			for (int x = 0; x < col; x++) {
@@ -242,12 +251,11 @@ int startprogram(Board board) {
 		// render the board
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
-				// in this loop, the actual position on the
-				// chess board is ((x), (7-y)) counting from a1
 				wchar_t ch[2] = L" \0";
 				if (board.board[(7-y)*MOVE_N + x] != NULL) {
 					ch[0] = board.board[(7-y)*MOVE_N + x]->ch;
 				}
+				// determining the colour to be used
 				int colour = 1;
 				if ((x+(7-y)) % 2 == 0)
 					colour += 1;
@@ -255,26 +263,23 @@ int startprogram(Board board) {
 					if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
 						colour += 2;
 
-				wattron(p_area, COLOR_PAIR(colour));
-				//move((row/2)-4+y, (col/2)-4+x);
-				//move(y, x+1);
-				mvwaddwstr(p_area, y, x+1, ch);
-
-				wattroff(p_area, COLOR_PAIR(colour));
+				attron(COLOR_PAIR(colour));
+				mvaddwstr(boardy+y, boardx+x, ch);
+				attroff(COLOR_PAIR(colour));
 			}
 		}
 		// print the row label
 		for (int i = 0; i < 8; i++) {
 			char ch[2] = {i+49, '\0'};
-			mvwprintw(p_area, 7-(i), 0, ch);
+			mvprintw(boardy+(7-i), boardx-1, ch);
 		}
-		mvwprintw(p_area, 8, 1, "abcdefgh"); // priint the colon label
+		mvprintw(boardy+8, boardx, "abcdefgh"); // print the colon label
+
+
 		refresh();
-		wrefresh(p_area);
 
 		// input 
 		if (getch() == KEY_F(1)) {
-			delwin(p_area);
 			return 0;
 		}
 	}
