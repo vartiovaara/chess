@@ -234,6 +234,16 @@ char* ntostrcoord(int pos) {
 	return str;
 }
 
+int nofdigits(int i) {
+	// Find out how many digits a number has.
+	int n = 0;
+	while (i != 0) {
+		i = floor(i/10);
+		n++;
+	}
+	return n;
+}
+
 /*
 // actually i'll make this function when the displaying and input is done
 void getmoves(Piece piece, int pos, int* moves, int* moves_amount) {
@@ -299,6 +309,12 @@ int startprogram(Board board) {
 			mvaddch(boardy+9, boardx+8, '-');
 		else
 			mvprintw(boardy+9, boardx+8, ntostrcoord(board.enpassant));
+
+		// halfmove clock
+		mvprintw(boardy-1, boardx-2, "h:%u", board.half_c);
+
+		// fullmove counter
+		mvprintw(boardy-1, boardx+8-1-nofdigits(board.full_c), "f:%u", board.full_c);
 
 		unsigned int ch = getch();
 		// TODO: user input stuff
