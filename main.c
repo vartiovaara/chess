@@ -225,7 +225,8 @@ Board parsefen(const char* fen) {
 }
 
 char* ntostrcoord(int pos) {
-	// Returns e.g. a1\0
+	// Returns e.g. a1\0 from pointer table index
+	// See: Piece* board[64] from struct Board
 	static char str[3];
 	str[0] = (pos % 8) + 97;
 	str[1] = floor(pos / 8) + 49;
