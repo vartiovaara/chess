@@ -79,7 +79,7 @@ Piece makepiece(char piece_c) {
 }
 
 typedef struct {
-	Piece* pieces; // can have max 32 pieces. For some reason, the pointers become invalid when out of context when having this array on stack.
+	Piece* pieces; // can have max 32 pieces. The pointers become invalid when out of context when having this array on stack.
 	Piece* board[64]; // pointers to pieces NULL if no piece [0] is a1 (a1 b1 ... g1 h1 a2 b2 ... )
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
@@ -260,6 +260,8 @@ void getmoves(Piece piece, int pos, int* moves, int* moves_amount) {
 */
 
 int startprogram(Board board) {
+	// only 4 input characters is used (e.g "a2a5\0")
+	char fullinput[5] = {'\0', '\0', '\0', '\0', '\0'};
 	// main loop
 	while (true) {
 		// board position on the screen. i don't use windows
@@ -296,13 +298,12 @@ int startprogram(Board board) {
 		}
 		// print the labels next to the board
 		for (int i = 0; i < 8; i++) {
-			char ch[2] = {i+49, '\0'};
-			mvprintw(boardy+(7-i), boardx-1, ch);
+			mvaddch(boardy+(7-i), boardx-1, i+49);
 		}
 		mvprintw(boardy+8, boardx, "abcdefgh");
 
 		// turn indicator
-		mvaddch(boardy+9, boardx-2, (board.whiteturn ? 'W': 'B'));
+		mvaddch(boardy+9, boardx+6, (board.whiteturn ? 'W': 'B'));
 
 		// en passant
 		if (board.enpassant == 0)
@@ -316,8 +317,20 @@ int startprogram(Board board) {
 		// fullmove counter
 		mvprintw(boardy-1, boardx+8-1-nofdigits(board.full_c), "f:%u", board.full_c);
 
+		// inputting area
+		mvprintw(boardy+9, boardx-1, fullinput);
+
+		// user input stuff
 		unsigned int ch = getch();
-		// TODO: user input stuff
+		unsigned int inputlen = strlen(fullinput);
+		if (isalnum(ch) && inputlen < 4) {
+			fullinput[inputlen] = ch;
+		}
+		else if (ch == KEY_BACKSPACE && inputlen > 0) {
+			fullinput[inputlen-1] = '\0';
+		}
+
+		move(boardy+9, boardx-1+inputlen);
 
 		refresh();
 
