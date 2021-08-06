@@ -234,14 +234,38 @@ char* ntostrcoord(int pos) {
 	return str;
 }
 
+int strtoncoord(char* pos) {
+	// Returns pointer table index from e.g. a1
+	// NOTE: Does NOT throw an error if there are errors in parsing.
+	// TODO: Test this
+	int n = 0;
+	n = (pos[0] - 97); // x
+	n += (unsigned int)strtoul(pos[1], NULL, 10);
+}
+
+bool validstrcoord(char* pos, Board* board) {
+	// Validates a string coord e.g. a1
+	// Does not check if a square is occupied
+	// TODO: Finish this
+	if (isalpha(inputlen[0]) && isdigit(inputlen[1])) {
+	}
+
 int nofdigits(int i) {
 	// Find out how many digits a number has.
+	if (i == 0)
+		return 1;
 	int n = 0;
 	while (i != 0) {
 		i = floor(i/10);
 		n++;
 	}
 	return n;
+}
+
+void movepiece(int startpos, int endpos, Board* board) {
+	// Moves a piece pointer from startpos to endpos.
+	board->board[endpos] = board->board[startpos];
+	board->board[startpos] = NULL;
 }
 
 /*
@@ -328,6 +352,13 @@ int startprogram(Board board) {
 		}
 		else if (ch == KEY_BACKSPACE && inputlen > 0) {
 			fullinput[inputlen-1] = '\0';
+		}
+		else if (ch == KEY_ENTER && inputlen == 4) {
+			// check if the input is valid, and make the move
+			if (isalpha(inputlen[0]) && isdigit(inputlen[1]) && 
+				isalpha(inputlen[2]) && isdigit(inputlen[3])) {
+				// todo finish the function and do this with 
+			}
 		}
 
 		move(boardy+9, boardx-1+inputlen);
