@@ -238,17 +238,19 @@ int strtoncoord(char* pos) {
 	// Returns pointer table index from e.g. a1
 	// NOTE: Does NOT throw an error if there are errors in parsing.
 	// TODO: Test this
+	char str[2] = {pos[1], '\0'};
 	int n = 0;
 	n = (pos[0] - 97); // x
-	n += (unsigned int)strtoul(pos[1], NULL, 10);
+	n += (unsigned int)strtoul(str, NULL, 10);
 }
 
 bool validstrcoord(char* pos, Board* board) {
 	// Validates a string coord e.g. a1
 	// Does not check if a square is occupied
 	// TODO: Finish this
-	if (isalpha(inputlen[0]) && isdigit(inputlen[1])) {
-	}
+	//if (isalpha(inputlen[0]) && isdigit(inputlen[1])) {
+	//}
+}
 
 int nofdigits(int i) {
 	// Find out how many digits a number has.
@@ -355,10 +357,10 @@ int startprogram(Board board) {
 		}
 		else if (ch == KEY_ENTER && inputlen == 4) {
 			// check if the input is valid, and make the move
-			if (isalpha(inputlen[0]) && isdigit(inputlen[1]) && 
+			/*if (isalpha(inputlen[0]) && isdigit(inputlen[1]) && 
 				isalpha(inputlen[2]) && isdigit(inputlen[3])) {
 				// todo finish the function and do this with 
-			}
+			}*/
 		}
 
 		move(boardy+9, boardx-1+inputlen);
