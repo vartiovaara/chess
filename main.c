@@ -13,6 +13,7 @@ To compile:
 #include <locale.h>
 #include <errno.h>
 #include <math.h>
+#include <stdbool.h>
 
 #define _XOPEN_SOURCE_EXTENDED
 #include <ncursesw/ncurses.h>
@@ -237,19 +238,25 @@ char* ntostrcoord(int pos) {
 int strtoncoord(char* pos) {
 	// Returns pointer table index from e.g. a1
 	// NOTE: Does NOT throw an error if there are errors in parsing.
-	// TODO: Test this
-	char str[2] = {pos[1], '\0'};
 	int n = 0;
 	n = (pos[0] - 97); // x
-	n += (unsigned int)strtoul(str, NULL, 10);
+	n += (pos[1] - 49)*8;
+	return n;
 }
 
-bool validstrcoord(char* pos, Board* board) {
+bool validstrcoord(char* pos) {
 	// Validates a string coord e.g. a1
 	// Does not check if a square is occupied
-	// TODO: Finish this
-	//if (isalpha(inputlen[0]) && isdigit(inputlen[1])) {
-	//}
+	if (!(isalpha(pos[0]) && isdigit(pos[1]))) {
+		return false;
+	}
+	else if (pos[0] < 97 || pos[0] > 104) {
+		return false;
+	}
+	else if (pos[1] < 49 || pos[1] > 56) {
+		return false;
+	}
+	return true;
 }
 
 int nofdigits(int i) {
@@ -352,15 +359,16 @@ int startprogram(Board board) {
 		if (isalnum(ch) && inputlen < 4) {
 			fullinput[inputlen] = ch;
 		}
-		else if (ch == KEY_BACKSPACE && inputlen > 0) {
+		if (ch == KEY_BACKSPACE && inputlen > 0) {
 			fullinput[inputlen-1] = '\0';
 		}
-		else if (ch == KEY_ENTER && inputlen == 4) {
-			// check if the input is valid, and make the move
-			/*if (isalpha(inputlen[0]) && isdigit(inputlen[1]) && 
-				isalpha(inputlen[2]) && isdigit(inputlen[3])) {
-				// todo finish the function and do this with 
-			}*/
+		if ((ch == KEY_ENTER || ch == '\n') && inputlen == 4) {
+			char startpos[2] = {fullinput[0], fullinput[1]};
+			char endpos[2] = {fullinput[2], fullinput[3]};
+			if (validstrcoord(startpos) && validstrcoord(endpos)) {
+				movepiece(strtoncoord(startpos), strtoncoord(endpos), &board);
+				memset(&fullinput, '\0', sizeof(fullinput[0])*5);
+			}
 		}
 
 		move(boardy+9, boardx-1+inputlen);
