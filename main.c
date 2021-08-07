@@ -367,6 +367,7 @@ int startprogram(Board board) {
 			char endpos[2] = {fullinput[2], fullinput[3]};
 			if (validstrcoord(startpos) && validstrcoord(endpos)) {
 				movepiece(strtoncoord(startpos), strtoncoord(endpos), &board);
+				board.whiteturn = !board.whiteturn;
 				memset(&fullinput, '\0', sizeof(fullinput[0])*5);
 			}
 		}
