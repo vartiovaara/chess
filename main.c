@@ -293,12 +293,12 @@ void getmoves(Piece piece, int pos, int* moves, int* moves_amount) {
 */
 
 int startprogram(Board board) {
-	// only 4 input characters is used (e.g "a2a5\0")
+	/* only 4 input characters is used (e.g "a2a5\0") */
 	char fullinput[5] = {'\0', '\0', '\0', '\0', '\0'};
-	// main loop
+	/* main loop */
 	while (true) {
-		// board position on the screen. i don't use windows
-		// becouse moving them would be cumbersome. this is more elegant
+		/* board position on the screen. i don't use windows */
+		/* becouse moving them would be cumbersome. this is more elegant */
 		unsigned int boardx = ((col/2)-4);
 		unsigned int boardy = ((row/2)-4);
 
@@ -313,9 +313,9 @@ int startprogram(Board board) {
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
 				wchar_t ch[2] = L" \0";
-				if (board.board[(7-y)*MOVE_N + x] != NULL) {
+				if (board.board[(7-y)*MOVE_N + x] != NULL)
 					ch[0] = board.board[(7-y)*MOVE_N + x]->ch;
-				}
+				
 				// determining the colour to be used
 				int colour = 1;
 				if ((x+(7-y)) % 2 == 0)
@@ -356,19 +356,36 @@ int startprogram(Board board) {
 		// user input stuff
 		unsigned int ch = getch();
 		unsigned int inputlen = strlen(fullinput);
-		if (isalnum(ch) && inputlen < 4) {
+		if (isalnum(ch) && inputlen < 4) 
 			fullinput[inputlen] = ch;
-		}
-		if (ch == KEY_BACKSPACE && inputlen > 0) {
+		
+		if (ch == KEY_BACKSPACE && inputlen > 0) 
 			fullinput[inputlen-1] = '\0';
-		}
+		
 		if ((ch == KEY_ENTER || ch == '\n') && inputlen == 4) {
+			/* the user wants to execute move */
 			char startpos[2] = {fullinput[0], fullinput[1]};
 			char endpos[2] = {fullinput[2], fullinput[3]};
 			if (validstrcoord(startpos) && validstrcoord(endpos)) {
-				movepiece(strtoncoord(startpos), strtoncoord(endpos), &board);
+				int startn = strtoncoord(startpos);
+				int endn = strtoncoord(endpos);
+				/* check if the move is legal */
+				/* TODO: Check if is ACTUALLY legal */
+				if (board.board[startn] == NULL)
+					goto END;
+				if (board.board[startn]->is_white != board.whiteturn)
+					goto END;
+				if (board.board[endn] != NULL) {
+					if (board.board[endn]->is_white == board.board[startn]->is_white) {
+						goto END;
+					}
+				}
+				movepiece(startn, endn, &board);
 				board.whiteturn = !board.whiteturn;
 				memset(&fullinput, '\0', sizeof(fullinput[0])*5);
+
+				END: /* move wasn't legal */
+					startn++; /* just a placeholder for "no nothing" */
 			}
 		}
 
@@ -376,9 +393,8 @@ int startprogram(Board board) {
 
 		refresh();
 
-		if (ch == KEY_F(1)) {
+		if (ch == KEY_F(1))
 			return 0;
-		}
 	}
 }
 
