@@ -34,8 +34,6 @@ To compile:
 
 #define USAGE "chess [fen] [argument]\n\nFen: The FEN representation of the board\n\nArguments:\n -h : Shows this help menu. \n\nIf started without arguments, starts with default starting board.\n"
 
-int row, col;
-
 const wchar_t piece_chars[6] = L"♚♛♝♞♜♙";
 
 typedef struct {
@@ -299,12 +297,12 @@ int startprogram(Board board) {
 	while (true) {
 		/* board position on the screen. i don't use windows */
 		/* becouse moving them would be cumbersome. this is more elegant */
-		unsigned int boardx = ((col/2)-4);
-		unsigned int boardy = ((row/2)-4);
+		unsigned int boardx = ((COLS/2)-4);
+		unsigned int boardy = ((LINES/2)-4);
 
 		// clear the screen to prevent ghosting after terminal resize
-		for (int y = 0; y < row; y++) {
-			for (int x = 0; x < col; x++) {
+		for (int y = 0; y < LINES; y++) {
+			for (int x = 0; x < COLS; x++) {
 				mvaddch(y, x, ' ');
 			}
 		}
@@ -376,16 +374,15 @@ int startprogram(Board board) {
 				if (board.board[startn]->is_white != board.whiteturn)
 					goto END;
 				if (board.board[endn] != NULL) {
-					if (board.board[endn]->is_white == board.board[startn]->is_white) {
+					if (board.board[endn]->is_white == board.board[startn]->is_white)
 						goto END;
-					}
 				}
 				movepiece(startn, endn, &board);
 				board.whiteturn = !board.whiteturn;
 				memset(&fullinput, '\0', sizeof(fullinput[0])*5);
 
 				END: /* move wasn't legal */
-					startn++; /* just a placeholder for "no nothing" */
+					; /* just a placeholder for "no nothing" */
 			}
 		}
 
@@ -419,20 +416,26 @@ int main(int argc, char** argv) {
 	Board board = parsefen(start_fen);
 	if (board.parsingerr) {
 		printf("Error while parsing FEN.\n");
+		free(board.pieces);
 		return 1;
 	}
 
 	// ncurses init stuff
 	setlocale(LC_ALL, "");
 
-	initscr();
+	if (!initscr()) {
+		puts("Error while starting ncurses.\n");
+		free(board.pieces);
+		return 1;
+	}
 	raw();
 	noecho();
 	keypad(stdscr, TRUE);
 
 	if (has_colors() == FALSE) {
 		endwin();
-		puts("Your terminal doesn't seem to support colours.");
+		puts("Your terminal doesn't seem to support colours.\n");
+		free(board.pieces);
 		return 1;
 	}
 	start_color();
@@ -442,10 +445,6 @@ int main(int argc, char** argv) {
 	init_pair(2, COLOR_WHITE, COLOR_RED);
 	init_pair(3, COLOR_BLACK, COLOR_YELLOW);
 	init_pair(4, COLOR_BLACK, COLOR_RED);
-
-	// TODO: change to signal based thing
-	//		 as right now resizing isn't recognized
-	getmaxyx(stdscr, row, col);
 
 	// start program
 	int exitcode = startprogram(board);
