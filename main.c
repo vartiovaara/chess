@@ -18,7 +18,7 @@ To compile:
 #define _XOPEN_SOURCE_EXTENDED
 #include <ncursesw/ncurses.h>
 
-#define DEBUG
+//#define DEBUG
 
 #define DEFAULT_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 //"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
@@ -223,14 +223,12 @@ Board parsefen(const char* fen) {
 	return board;
 }
 
-char* ntostrcoord(int pos) {
-	// Returns e.g. a1\0 from pointer table index
+void ntostrcoord(int pos, char* str) {
+	// Sets str to e.g. a1\0 from pointer table index
 	// See: Piece* board[64] from struct Board
-	static char str[3];
 	str[0] = (pos % 8) + 97;
 	str[1] = floor(pos / 8) + 49;
 	str[2] = '\0';
-	return str;
 }
 
 int strtoncoord(char* pos) {
@@ -307,6 +305,17 @@ int startprogram(Board board) {
 			}
 		}
 
+		// input length
+		unsigned int inputlen = strlen(fullinput);
+
+		// notate the board according to what's being inputted
+		bool notate = validstrcoord(fullinput);
+		int notatex, notatey;
+		if (notate) {
+			notatex = (fullinput[0] - 97); // x
+			notatey = (7-(fullinput[1] - 49));
+		}
+
 		// render the board
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
@@ -315,12 +324,20 @@ int startprogram(Board board) {
 					ch[0] = board.board[(7-y)*MOVE_N + x]->ch;
 				
 				// determining the colour to be used
-				int colour = 1;
-				if ((x+(7-y)) % 2 == 0)
-					colour += 1;
-				if (board.board[(7-y)*MOVE_N + x] != NULL)
-					if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
-						colour += 2;
+				int colour;
+				if (notate && (x == notatex && y == notatey)) {
+					colour = 5;
+					if (board.board[(7-y)*MOVE_N + x] != NULL)
+						if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
+							colour += 1;
+				} else {
+					colour = 1;
+					if ((x+(7-y)) % 2 == 0)
+						colour += 1;
+					if (board.board[(7-y)*MOVE_N + x] != NULL)
+						if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
+							colour += 2;
+				}
 
 				attron(COLOR_PAIR(colour));
 				mvaddwstr(boardy+y, boardx+x, ch);
@@ -339,8 +356,11 @@ int startprogram(Board board) {
 		// en passant
 		if (board.enpassant == 0)
 			mvaddch(boardy+9, boardx+8, '-');
-		else
-			mvprintw(boardy+9, boardx+8, ntostrcoord(board.enpassant));
+		else {
+			char enp[3];
+			ntostrcoord(board.enpassant, enp);
+			mvprintw(boardy+9, boardx+8, enp);
+		}
 
 		// halfmove clock
 		mvprintw(boardy-1, boardx-2, "h:%u", board.half_c);
@@ -353,7 +373,6 @@ int startprogram(Board board) {
 
 		// user input stuff
 		unsigned int ch = getch();
-		unsigned int inputlen = strlen(fullinput);
 		if (isalnum(ch) && inputlen < 4) 
 			fullinput[inputlen] = ch;
 		
@@ -369,6 +388,9 @@ int startprogram(Board board) {
 				int endn = strtoncoord(endpos);
 				/* check if the move is legal */
 				/* TODO: Check if is ACTUALLY legal */
+				// currently checks if starting square is empty
+				// if wrong players piece is moved
+				// if try to eat own piece
 				if (board.board[startn] == NULL)
 					goto END;
 				if (board.board[startn]->is_white != board.whiteturn)
@@ -382,7 +404,7 @@ int startprogram(Board board) {
 				memset(&fullinput, '\0', sizeof(fullinput[0])*5);
 
 				END: /* move wasn't legal */
-					; /* just a placeholder for "no nothing" */
+					; /* just a placeholder for "do nothing" */
 			}
 		}
 
@@ -441,15 +463,18 @@ int main(int argc, char** argv) {
 	start_color();
 	init_color(COLOR_RED, 500, 300, 300); // used for "dark" tile colour
 	init_color(COLOR_YELLOW, 400, 400, 200); // used for "light" tile colour
+	init_color(COLOR_CYAN, 200, 500, 320); // used for notation
 	init_pair(1, COLOR_WHITE, COLOR_YELLOW);
 	init_pair(2, COLOR_WHITE, COLOR_RED);
 	init_pair(3, COLOR_BLACK, COLOR_YELLOW);
 	init_pair(4, COLOR_BLACK, COLOR_RED);
+	init_pair(5, COLOR_WHITE, COLOR_CYAN); // for notating
+	init_pair(6, COLOR_BLACK, COLOR_CYAN);
 
 	// start program
 	int exitcode = startprogram(board);
 
-	// free the pointer table
+	// free the pieces
 	free(board.pieces);
 
 	endwin();
