@@ -94,8 +94,7 @@ Board* parsefen(const char* fen) {
 	// See: https://www.chessprogramming.org/Forsyth-Edwards_Notation
 	// For maximum length of FEN, see: https://chess.stackexchange.com/a/30006
 
-	Board* board;
-	board = malloc(sizeof(Board)); // allocate the board
+	Board* const board = malloc(sizeof(Board)); // allocate the board
 	memset(&board->board, 0, sizeof(board->board[0])*64);
 	board->parsingerr = true; // if error happens we don't change this
 	// the +1 is so the \0 gets copied too
@@ -224,7 +223,7 @@ Board* parsefen(const char* fen) {
 	return board;
 }
 
-void ntostrcoord(int pos, char* str) {
+void ntostrcoord(const int pos, char* const restrict str) {
 	// Sets str to e.g. a1\0 from pointer table index
 	// See: Piece* board[64] from struct Board
 	str[0] = (pos % 8) + 97;
@@ -232,7 +231,7 @@ void ntostrcoord(int pos, char* str) {
 	str[2] = '\0';
 }
 
-int strtoncoord(char* pos) {
+int strtoncoord(const char* pos) {
 	// Returns pointer table index from e.g. a1
 	// NOTE: Does NOT throw an error if there are errors in parsing.
 	int n = 0;
@@ -241,7 +240,7 @@ int strtoncoord(char* pos) {
 	return n;
 }
 
-bool validstrcoord(char* pos) {
+bool validstrcoord(const char* pos) {
 	// Validates a string coord e.g. a1
 	// Does not check if a square is occupied
 	if (!(isalpha(pos[0]) && isdigit(pos[1]))) {
@@ -268,7 +267,7 @@ int nofdigits(int i) {
 	return n;
 }
 
-void movepiece(int startpos, int endpos, Board* board) {
+void movepiece(const int startpos, const int endpos, Board* const board) {
 	// Moves a piece pointer from startpos to endpos.
 	board->board[endpos] = board->board[startpos];
 	board->board[startpos] = NULL;
@@ -289,15 +288,15 @@ void getmoves(Piece piece, int pos, int* moves, int* moves_amount) {
 }
 */
 
-int startprogram(Board* board) {
+int startprogram(Board* const restrict board) {
 	/* only 4 input characters is used (e.g "a2a5\0") */
 	char fullinput[5] = {'\0', '\0', '\0', '\0', '\0'};
 	/* main loop */
 	while (true) {
 		/* board position on the screen. i don't use windows */
 		/* becouse moving them would be cumbersome. this is more elegant */
-		unsigned int boardx = ((COLS/2)-4);
-		unsigned int boardy = ((LINES/2)-4);
+		const unsigned int boardx = ((COLS/2)-4);
+		const unsigned int boardy = ((LINES/2)-4);
 
 		// clear the screen to prevent ghosting after terminal resize
 		for (int y = 0; y < LINES; y++) {
@@ -307,10 +306,10 @@ int startprogram(Board* board) {
 		}
 
 		// input length
-		unsigned int inputlen = strlen(fullinput);
+		const unsigned int inputlen = strlen(fullinput);
 
 		// notate the board according to what's being inputted
-		bool notate = validstrcoord(fullinput);
+		const bool notate = validstrcoord(fullinput);
 		int notatex, notatey;
 		if (notate) {
 			notatex = (fullinput[0] - 97); // x
@@ -373,7 +372,7 @@ int startprogram(Board* board) {
 		mvprintw(boardy+9, boardx-1, fullinput);
 
 		// user input stuff
-		unsigned int ch = getch();
+		const unsigned int ch = getch();
 		if (isalnum(ch) && inputlen < 4) 
 			fullinput[inputlen] = ch;
 		
@@ -382,8 +381,8 @@ int startprogram(Board* board) {
 		
 		if ((ch == KEY_ENTER || ch == '\n') && inputlen == 4) {
 			/* the user wants to execute move */
-			char startpos[2] = {fullinput[0], fullinput[1]};
-			char endpos[2] = {fullinput[2], fullinput[3]};
+			const char startpos[2] = {fullinput[0], fullinput[1]};
+			const char endpos[2] = {fullinput[2], fullinput[3]};
 			if (validstrcoord(startpos) && validstrcoord(endpos)) {
 				int startn = strtoncoord(startpos);
 				int endn = strtoncoord(endpos);
@@ -436,7 +435,7 @@ int main(int argc, char** argv) {
 	}
 
 	// parse the fen
-	Board* board = parsefen(start_fen);
+	Board* const board = parsefen(start_fen);
 	if (board->parsingerr) {
 		printf("Error while parsing FEN.\n");
 		free(board);
