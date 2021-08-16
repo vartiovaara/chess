@@ -78,7 +78,7 @@ Piece makepiece(char piece_c) {
 }
 
 typedef struct {
-	Piece* pieces; // can have max 32 pieces. The pointers become invalid when out of context when having this array on stack.
+	Piece pieces[32]; // can have max 32 pieces. The pointers become invalid when out of context when having this array on stack.
 	Piece* board[64]; // pointers to pieces NULL if no piece [0] is a1 (a1 b1 ... g1 h1 a2 b2 ... )
 	bool whiteturn;
 	bool wqcastle, wkcastle; // whites castling rights
@@ -88,15 +88,16 @@ typedef struct {
 	bool parsingerr; // true if errors happened during parsing
 } Board;
 
-Board parsefen(const char* fen) {
-	// Function to parse a FEN string and return a board.
+Board* parsefen(const char* fen) {
+	// Function to parse a FEN string and return a pointer to a board.
+	// REMEMBER TO FREE THE BOARD
 	// See: https://www.chessprogramming.org/Forsyth-Edwards_Notation
 	// For maximum length of FEN, see: https://chess.stackexchange.com/a/30006
 
-	Board board;
-	board.pieces = malloc(sizeof(Piece)*32);
-	memset(&board.board, 0, sizeof(board.board[0])*64);
-	board.parsingerr = true; // if error happens we don't change this
+	Board* board;
+	board = malloc(sizeof(Board)); // allocate the board
+	memset(&board->board, 0, sizeof(board->board[0])*64);
+	board->parsingerr = true; // if error happens we don't change this
 	// the +1 is so the \0 gets copied too
 	unsigned int fen_len = strlen(fen) + 1;
 
@@ -125,7 +126,7 @@ Board parsefen(const char* fen) {
 		rows[i] = strtok(NULL, "/");
 	}
 	// go through the rows and make the pieces if necessary
-	// TODO: can be more efficient as now it loops trough all
+	// FIXME: can be more efficient as now it loops trough all
 	// 64 squares and all that is needed is looping trough
 	// all the characters in the FEN. Thusly not even needing
 	// splitting.
@@ -146,8 +147,8 @@ Board parsefen(const char* fen) {
 					return board;
 				j += n-1;
 			} else {
-				board.pieces[piece_count] = makepiece(rows[i][rc]);
-				board.board[(7-i) * MOVE_N + j] = &board.pieces[piece_count];
+				board->pieces[piece_count] = makepiece(rows[i][rc]);
+				board->board[(7-i) * MOVE_N + j] = &board->pieces[piece_count];
 				piece_count++;
 			}
 			rc++; // parse the next character
@@ -156,17 +157,17 @@ Board parsefen(const char* fen) {
 
 	// turn
 	if (!strcmp(turn, "w"))
-		board.whiteturn = true;
+		board->whiteturn = true;
 	else if (!strcmp(turn, "b"))
-		board.whiteturn = false;
+		board->whiteturn = false;
 	else
 		return board;
 
 	// castling
-	board.wqcastle = (strchr(castling, 'Q') ? true : false);
-	board.wkcastle = (strchr(castling, 'K') ? true : false);
-	board.bqcastle = (strchr(castling, 'q') ? true : false);
-	board.bkcastle = (strchr(castling, 'k') ? true : false);
+	board->wqcastle = (strchr(castling, 'Q') ? true : false);
+	board->wkcastle = (strchr(castling, 'K') ? true : false);
+	board->bqcastle = (strchr(castling, 'q') ? true : false);
+	board->bkcastle = (strchr(castling, 'k') ? true : false);
 
 	// en passant
 	if (strcmp(enpassant, "-")) {
@@ -177,30 +178,30 @@ Board parsefen(const char* fen) {
 			printf("Other ranks than 3 and 6 for en passant target are not valid.\n");
 			return board;
 		}
-		board.enpassant = (enpassant[0] - 97) * MOVE_E; // x
-		board.enpassant += ((enpassant[1] == '3' ? 3 : 6)-1) * MOVE_N; // y (-1 is becouse counting starts from a1 not a0(don't move when 1))
+		board->enpassant = (enpassant[0] - 97) * MOVE_E; // x
+		board->enpassant += ((enpassant[1] == '3' ? 3 : 6)-1) * MOVE_N; // y (-1 is becouse counting starts from a1 not a0(don't move when 1))
 	} else {
-		board.enpassant = 0;
+		board->enpassant = 0;
 	}
 
 	// half-move clock
 	errno = 0;
-	board.half_c = (unsigned int)strtoul(half_c, NULL, 10);
-	if (errno == EINVAL || errno == ERANGE || board.half_c > 999)
+	board->half_c = (unsigned int)strtoul(half_c, NULL, 10);
+	if (errno == EINVAL || errno == ERANGE || board->half_c > 999)
 		return board;
 
 	// full-move counter
 	errno = 0;
-	board.full_c = (unsigned int)strtoul(full_c, NULL, 10);
-	if (errno == EINVAL || errno == ERANGE || board.full_c > 9999)
+	board->full_c = (unsigned int)strtoul(full_c, NULL, 10);
+	if (errno == EINVAL || errno == ERANGE || board->full_c > 9999)
 		return board;
 
 #ifdef DEBUG
 	// debug information
 	puts("Fen parsing debug information start: \n");
 	for (int i = 63; i >= 0; i--) {
-		if (board.board[i] != NULL)
-			putc(board.board[i]->type+48+(board.board[i]->is_white ? (97-48) : 0), stdout);
+		if (board->board[i] != NULL)
+			putc(board->board[i]->type+48+(board->board[i]->is_white ? (97-48) : 0), stdout);
 		else
 			putc('-', stdout);
 		if (i % 8 == 0)
@@ -211,15 +212,15 @@ Board parsefen(const char* fen) {
 	printf("%s\n", p_placement);
 	printf("%s\n", turn);
 	printf("%s\n", castling);
-	printf("Q: %u K: %u q: %u k: %u\n", board.wqcastle, board.wkcastle, board.bqcastle, board.bkcastle);
+	printf("Q: %u K: %u q: %u k: %u\n", board->wqcastle, board->wkcastle, board->bqcastle, board->bkcastle);
 	printf("%s\n", enpassant);
-	printf("%c %c -> %u\n", enpassant[0], enpassant[1], board.enpassant);
-	printf("\"%s\" -> %u\n", half_c, board.half_c);
-	printf("\"%s\" -> %u\n", full_c, board.full_c);
+	printf("%c %c -> %u\n", enpassant[0], enpassant[1], board->enpassant);
+	printf("\"%s\" -> %u\n", half_c, board->half_c);
+	printf("\"%s\" -> %u\n", full_c, board->full_c);
 	puts("Fen parsing debug information end. \n");
 #endif
 
-	board.parsingerr = false; // no errors happened (hopefully)
+	board->parsingerr = false; // no errors happened (hopefully)
 	return board;
 }
 
@@ -288,7 +289,7 @@ void getmoves(Piece piece, int pos, int* moves, int* moves_amount) {
 }
 */
 
-int startprogram(Board board) {
+int startprogram(Board* board) {
 	/* only 4 input characters is used (e.g "a2a5\0") */
 	char fullinput[5] = {'\0', '\0', '\0', '\0', '\0'};
 	/* main loop */
@@ -320,22 +321,22 @@ int startprogram(Board board) {
 		for (int y = 0; y < 8; y++) {
 			for (int x = 0; x < 8; x++) {
 				wchar_t ch[2] = L" \0";
-				if (board.board[(7-y)*MOVE_N + x] != NULL)
-					ch[0] = board.board[(7-y)*MOVE_N + x]->ch;
+				if (board->board[(7-y)*MOVE_N + x] != NULL)
+					ch[0] = board->board[(7-y)*MOVE_N + x]->ch;
 				
 				// determining the colour to be used
 				int colour;
 				if (notate && (x == notatex && y == notatey)) {
 					colour = 5;
-					if (board.board[(7-y)*MOVE_N + x] != NULL)
-						if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
+					if (board->board[(7-y)*MOVE_N + x] != NULL)
+						if (!(board->board[(7-y)*MOVE_N + x] -> is_white))
 							colour += 1;
 				} else {
 					colour = 1;
 					if ((x+(7-y)) % 2 == 0)
 						colour += 1;
-					if (board.board[(7-y)*MOVE_N + x] != NULL)
-						if (!(board.board[(7-y)*MOVE_N + x] -> is_white))
+					if (board->board[(7-y)*MOVE_N + x] != NULL)
+						if (!(board->board[(7-y)*MOVE_N + x] -> is_white))
 							colour += 2;
 				}
 
@@ -351,22 +352,22 @@ int startprogram(Board board) {
 		mvprintw(boardy+8, boardx, "abcdefgh");
 
 		// turn indicator
-		mvaddch(boardy+9, boardx+6, (board.whiteturn ? 'W': 'B'));
+		mvaddch(boardy+9, boardx+6, (board->whiteturn ? 'W': 'B'));
 
 		// en passant
-		if (board.enpassant == 0)
+		if (board->enpassant == 0)
 			mvaddch(boardy+9, boardx+8, '-');
 		else {
 			char enp[3];
-			ntostrcoord(board.enpassant, enp);
+			ntostrcoord(board->enpassant, enp);
 			mvprintw(boardy+9, boardx+8, enp);
 		}
 
 		// halfmove clock
-		mvprintw(boardy-1, boardx-2, "h:%u", board.half_c);
+		mvprintw(boardy-1, boardx-2, "h:%u", board->half_c);
 
 		// fullmove counter
-		mvprintw(boardy-1, boardx+8-1-nofdigits(board.full_c), "f:%u", board.full_c);
+		mvprintw(boardy-1, boardx+8-1-nofdigits(board->full_c), "f:%u", board->full_c);
 
 		// inputting area
 		mvprintw(boardy+9, boardx-1, fullinput);
@@ -391,16 +392,16 @@ int startprogram(Board board) {
 				// currently checks if starting square is empty
 				// if wrong players piece is moved
 				// if try to eat own piece
-				if (board.board[startn] == NULL)
+				if (board->board[startn] == NULL)
 					goto END;
-				if (board.board[startn]->is_white != board.whiteturn)
+				if (board->board[startn]->is_white != board->whiteturn)
 					goto END;
-				if (board.board[endn] != NULL) {
-					if (board.board[endn]->is_white == board.board[startn]->is_white)
+				if (board->board[endn] != NULL) {
+					if (board->board[endn]->is_white == board->board[startn]->is_white)
 						goto END;
 				}
-				movepiece(startn, endn, &board);
-				board.whiteturn = !board.whiteturn;
+				movepiece(startn, endn, board);
+				board->whiteturn = !board->whiteturn;
 				memset(&fullinput, '\0', sizeof(fullinput[0])*5);
 
 				END: /* move wasn't legal */
@@ -435,10 +436,10 @@ int main(int argc, char** argv) {
 	}
 
 	// parse the fen
-	Board board = parsefen(start_fen);
-	if (board.parsingerr) {
+	Board* board = parsefen(start_fen);
+	if (board->parsingerr) {
 		printf("Error while parsing FEN.\n");
-		free(board.pieces);
+		free(board);
 		return 1;
 	}
 
@@ -447,7 +448,7 @@ int main(int argc, char** argv) {
 
 	if (!initscr()) {
 		puts("Error while starting ncurses.\n");
-		free(board.pieces);
+		free(board);
 		return 1;
 	}
 	raw();
@@ -457,7 +458,7 @@ int main(int argc, char** argv) {
 	if (has_colors() == FALSE) {
 		endwin();
 		puts("Your terminal doesn't seem to support colours.\n");
-		free(board.pieces);
+		free(board);
 		return 1;
 	}
 	start_color();
@@ -475,7 +476,7 @@ int main(int argc, char** argv) {
 	int exitcode = startprogram(board);
 
 	// free the pieces
-	free(board.pieces);
+	free(board);
 
 	endwin();
 	return exitcode;
